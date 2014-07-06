@@ -1,8 +1,9 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+*.py[codx]
 
 # C extensions
+*.c
 *.so
 
 # Distribution / packaging
@@ -54,3 +55,15 @@ docs/_build/
 
 # Archive files
 *.tar.gz
+
+# Other files
+*.txt
+*.pdf
+.idea
+.settings
+*.html
+samples/
+samples_*
+hashs/
+eval/
+unsupported/

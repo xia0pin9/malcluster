@@ -91,7 +91,7 @@ def getDmlist():
 
 """ Wrapper for the Hierarchical Clustering algorithm from fastcluster """
 def hacluster(y):
-    Z = fastcluster.linkage(y, method='complete')
+    Z = fastcluster.linkage(y, method='single')
     return Z
 
 def evaluate(Z):
@@ -139,13 +139,17 @@ def evaluate(Z):
     if p1(tempx) > p2(tempx):
         tempy = p1(tempx)
     print "Best x:", tempx, "Best y:", tempy
-    pleg1, = plt.plot(threshold, precisionSet, '-bo', label="Precision")
-    pleg2, = plt.plot(threshold, recallSet, '-rx', label="Recall")
-    plt.legend([pleg1, pleg2], ["Precision", "Recall"], loc="center right")
-    plt.xlabel('Distance Threshold (t)')
-    plt.ylabel("Precision and Recall")
-    plt.show()
-    plt.savefig('myfig.pdf')
+    try:
+        pleg1, = plt.plot(threshold, precisionSet, '-bo', label="Precision")
+        pleg2, = plt.plot(threshold, recallSet, '-rx', label="Recall")
+        plt.legend([pleg1, pleg2], ["Precision", "Recall"], loc="center right")
+        plt.xlabel('Distance Threshold (t)')
+        plt.ylabel("Precision and Recall")
+        plt.show()
+    except:
+        raise
+    finally:
+        plt.close()
     return tempx , tempy
 #     print precisionSet, recallSet
 
@@ -238,9 +242,9 @@ def getClusters(Z, shresholdx):
 def main():
     global myhash 
 #     myhash = mvhash.MvHash(512, 20, 0.7)
-#     myhash = nghash.NgHash(20, 80)
+    myhash = nghash.NgHash(7, 1)
 #     myhash = sdhash.SdHash()
-    myhash = bshash.BsHash(81920, 20, 1)
+#     myhash = bshash.BsHash(81920, 7, 1)
     startedat = timeit.default_timer()
     hashGen()
     hashgenat = timeit.default_timer()
@@ -255,6 +259,7 @@ def main():
     #print "Round", i, j, tempy
     getClusters(Z, shresholdx)  
     print "Finish clustering analyais", len(malorder), hclustat - getdmat    
+    
     
 #     currentij = ''
 #     besty = 0
@@ -285,11 +290,11 @@ def main():
 #     print "Done", currentij, besty
 
 #     print "Test1"
-#     b = os.path.join(os.getcwd(), "samples/nsis-2.45-setup.exe")
-#     a = os.path.join(os.getcwd(), "samples/nsis-2.46-setup.exe")
+#     a = os.path.join(os.getcwd(), "samples/bettersurf-001d106b8f74e8a92d8d19b39fb4afea")
+#     b = os.path.join(os.getcwd(), "samples/fosniw-fc2498ac9c1785d56441b4ac79ac2e95")
 #     mvhasha = myhash.generateHash(a)
 #     mvhashb = myhash.generateHash(b)
-#     print myhash.compareHashH(mvhasha, mvhashb)
+#     print myhash.compareHash(mvhasha, mvhashb)
 #     nghash = NgHash(16, 32)
 #     print "Test2"
 #     rawa = nghash.generateRaw(a)

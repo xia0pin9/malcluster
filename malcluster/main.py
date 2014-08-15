@@ -24,7 +24,16 @@ import nghash
 import sdhash
 import bshash
 
-def timing(self, f):
+
+p1 = None
+p2 = None
+malorder = []
+fingerprints = {}
+cwd = os.getcwd()
+myhash = None
+
+
+def timing(f):
     def wrap(*args):
         time1 = time.time()
         ret = f(*args)
@@ -33,76 +42,68 @@ def timing(self, f):
         return ret
     return wrap
 
-p1 = None
-p2 = None
-malorder = []
-fingerprints = {}
-cwd = os.getcwd()
-myhash = None
-    
-#     def __init__(self):
-#         pass
-#         if hashname == 'mvhash':
-#             hash = MvHash()
-#         elif hashname == 'nghash':
-#             hash = NgHash()
 
-""" Wrapper for generating fingerprints from malware samples """
-def hashGen():
+def hash_gen():
+    """ Wrapper for generating fingerprints from malware samples """
     shutil.rmtree(os.path.join(cwd, "hashs/"), ignore_errors=True)
     os.mkdir(os.path.join(cwd, "hashs"))
-    mallist = (x for x in os.listdir(os.path.join(cwd,"samples/")))
+    mallist = (x for x in os.listdir(os.path.join(cwd, "samples/")))
     for malware in mallist:
         malpath = os.path.join(cwd, "samples/" + malware)
         malorder.append(malware)
         fingerprints[malware] = myhash.generateHash(malpath)
 
-def hashComp(ab):
+
+def hash_comp(ab):
 #         a = fingerprints[ab[0]]
 #         b = fingerprints[ab[1]]
     return myhash.compareHash(ab[0], ab[1])
-    
-def getDmentry():
+
+
+def get_dmentry():
     for item in itertools.combinations(malorder, 2):
         yield map(fingerprints.get, item)
        
-""" Get all the pairwise distance matrix """
-def getDmlist():
-    numberPerRound = 10000
+
+def get_dmlist():
+    """ Get all the pairwise distance matrix """
+    number_per_round = 10000
     result = []
-    getdm = getDmentry()
+    getdm = get_dmentry()
     pool = mp.Pool(processes=mp.cpu_count())
     while True:
-        tempresult = pool.map(hashComp, itertools.islice(getdm, numberPerRound))
+        tempresult = pool.map(hash_comp, itertools.islice(getdm, number_per_round))
         if tempresult:
             result.extend(tempresult)
         else:
             break
     return np.array(result)
 
+
 # def getDmlist():
 #     dmlist = [map(fingerprints.get, item) for item in itertools.combinations(malorder, 2)]
 #     pool = mp.Pool(processes=mp.cpu_count())
-#     result = pool.map(hashComp, dmlist)
+#     result = pool.map(hash_comp, dmlist)
 #     pool.close()
 #     pool.join()
 #     print "DM size: ", len(result)
 #     return np.array(result)
 
-""" Wrapper for the Hierarchical Clustering algorithm from fastcluster """
-def hacluster(y):
-    Z = fastcluster.linkage(y, method='single')
-    return Z
 
-def evaluate(Z):
+def hacluster(y):
+    """ Wrapper for the Hierarchical Clustering algorithm from fastcluster """
+    z = fastcluster.linkage(y, method='single')
+    return z
+
+
+def evaluate(z):
     shutil.rmtree(os.path.join(os.getcwd(), "eval/"), ignore_errors=True)
     os.mkdir(os.path.join(os.getcwd(), "eval"))
     threshold = np.linspace(0, 1, 21)
     mid = np.arange(0, 1, 0.01)
-    precisionSet = []
-    recallSet = []
+    precision_set = []
+    recall_set = []
     refset = {}
-    reflines = None
     tempx = 0
     for i in xrange(len(malorder)):
         if malorder[i].split("-")[0] not in refset:
@@ -114,21 +115,18 @@ def evaluate(Z):
             f.write(family + ": " + ' '.join([str(x) for x in refset[family]]) + "\n")
     
     for i in threshold:
-        cdblines = None
         with open("eval/refset.txt") as f:
             reflines = f.readlines()
-        hc = fcluster(Z, i, 'distance')
-        cdblines = getClist(hc, i)
+        hc = fcluster(z, i, 'distance')
+        cdblines = get_clist(hc, i)
         precision = quality.precision(reflines,  cdblines)
         recall = quality.recall(reflines, cdblines)
-#         precision, recall = clusterStats(np.array(hc))
-        precisionSet.append(precision)
-        recallSet.append(recall)
-#     figure = plt.figure()
+        precision_set.append(precision)
+        recall_set.append(recall)
     global p1
-    p1 = PiecewisePolynomial(threshold, np.array(precisionSet)[:, np.newaxis])
+    p1 = PiecewisePolynomial(threshold, np.array(precision_set)[:, np.newaxis])
     global p2
-    p2 = PiecewisePolynomial(threshold, np.array(recallSet)[:, np.newaxis])
+    p2 = PiecewisePolynomial(threshold, np.array(recall_set)[:, np.newaxis])
     for x in mid:
         root, infodict, ier, mesg = fsolve(pdiff, x, full_output=True)
         root = float("%.3f" % root[0])
@@ -140,8 +138,8 @@ def evaluate(Z):
         tempy = p1(tempx)
     print "Best x:", tempx, "Best y:", tempy
     try:
-        pleg1, = plt.plot(threshold, precisionSet, '-bo', label="Precision")
-        pleg2, = plt.plot(threshold, recallSet, '-rx', label="Recall")
+        pleg1, = plt.plot(threshold, precision_set, '-bo', label="Precision")
+        pleg2, = plt.plot(threshold, recall_set, '-rx', label="Recall")
         plt.legend([pleg1, pleg2], ["Precision", "Recall"], loc="center right")
         plt.xlabel('Distance Threshold (t)')
         plt.ylabel("Precision and Recall")
@@ -150,21 +148,22 @@ def evaluate(Z):
         raise
     finally:
         plt.close()
-    return tempx , tempy
-#     print precisionSet, recallSet
+    return tempx, tempy
+
 
 def pdiff(x):
     return p1(x) - p2(x)
 
-def getClist(hc, s):
+
+def get_clist(hc, s):
     ncluster = 0
     shres = '%1.3f' % s
     with open("eval/"+shres+".txt", "w") as f:
         for i in xrange(len(malorder)):
             cid = hc[i]
-            if (cid == -1):
+            if cid == -1:
                 continue
-            if (cid == 0):
+            if cid == 0:
                 hc[i] = -1
                 f.write("C" + str(ncluster) + ": " + str(i) + "\n")
                 ncluster += 1
@@ -179,9 +178,10 @@ def getClist(hc, s):
     print "Threshold: ", s, "Nclusters: ", ncluster
     with open("eval/"+shres+".txt") as f:
         return f.readlines()
-            
-def getClusters(Z, shresholdx):
-    hc = fcluster(Z, shresholdx, 'distance')
+
+
+def get_clusters(z, shresholdx):
+    hc = fcluster(z, shresholdx, 'distance')
     clusters = {}
     with open("eval/cluster_results.txt", "w") as f:
         for i in xrange(hc.min(), hc.max()+1):
@@ -246,18 +246,17 @@ def main():
 #     myhash = sdhash.SdHash()
 #     myhash = bshash.BsHash(81920, 7, 1)
     startedat = timeit.default_timer()
-    hashGen()
+    hash_gen()
     hashgenat = timeit.default_timer()
     print "Finish generating fingerprints", hashgenat - startedat
-    y = getDmlist()
+    y = get_dmlist()
     print max(y)
     getdmat = timeit.default_timer()
     print "Finish generating distance matrix", getdmat - hashgenat
-    Z = hacluster(y)
+    z = hacluster(y)
     hclustat = timeit.default_timer()
-    shresholdx, tempy = evaluate(Z)
-    #print "Round", i, j, tempy
-    getClusters(Z, shresholdx)  
+    shresholdx, tempy = evaluate(z)
+    get_clusters(z, shresholdx)
     print "Finish clustering analyais", len(malorder), hclustat - getdmat    
     
     

@@ -33,7 +33,7 @@ cwd = os.getcwd()
 myhash = None
 
 
-def timing(self, f):
+def timing(f):
     def wrap(*args):
         time1 = time.time()
         ret = f(*args)
@@ -47,7 +47,7 @@ def hash_gen():
     """ Wrapper for generating fingerprints from malware samples """
     shutil.rmtree(os.path.join(cwd, "hashs/"), ignore_errors=True)
     os.mkdir(os.path.join(cwd, "hashs"))
-    mallist = (x for x in os.listdir(os.path.join(cwd,"samples/")))
+    mallist = (x for x in os.listdir(os.path.join(cwd, "samples/")))
     for malware in mallist:
         malpath = os.path.join(cwd, "samples/" + malware)
         malorder.append(malware)
@@ -92,11 +92,11 @@ def get_dmlist():
 
 def hacluster(y):
     """ Wrapper for the Hierarchical Clustering algorithm from fastcluster """
-    Z = fastcluster.linkage(y, method='single')
-    return Z
+    z = fastcluster.linkage(y, method='single')
+    return z
 
 
-def evaluate(Z):
+def evaluate(z):
     shutil.rmtree(os.path.join(os.getcwd(), "eval/"), ignore_errors=True)
     os.mkdir(os.path.join(os.getcwd(), "eval"))
     threshold = np.linspace(0, 1, 21)
@@ -104,7 +104,6 @@ def evaluate(Z):
     precision_set = []
     recall_set = []
     refset = {}
-    reflines = None
     tempx = 0
     for i in xrange(len(malorder)):
         if malorder[i].split("-")[0] not in refset:
@@ -116,10 +115,9 @@ def evaluate(Z):
             f.write(family + ": " + ' '.join([str(x) for x in refset[family]]) + "\n")
     
     for i in threshold:
-        cdblines = None
         with open("eval/refset.txt") as f:
             reflines = f.readlines()
-        hc = fcluster(Z, i, 'distance')
+        hc = fcluster(z, i, 'distance')
         cdblines = get_clist(hc, i)
         precision = quality.precision(reflines,  cdblines)
         recall = quality.recall(reflines, cdblines)
@@ -150,7 +148,7 @@ def evaluate(Z):
         raise
     finally:
         plt.close()
-    return tempx , tempy
+    return tempx, tempy
 
 
 def pdiff(x):
@@ -163,9 +161,9 @@ def get_clist(hc, s):
     with open("eval/"+shres+".txt", "w") as f:
         for i in xrange(len(malorder)):
             cid = hc[i]
-            if (cid == -1):
+            if cid == -1:
                 continue
-            if (cid == 0):
+            if cid == 0:
                 hc[i] = -1
                 f.write("C" + str(ncluster) + ": " + str(i) + "\n")
                 ncluster += 1
@@ -182,8 +180,8 @@ def get_clist(hc, s):
         return f.readlines()
 
 
-def get_clusters(Z, shresholdx):
-    hc = fcluster(Z, shresholdx, 'distance')
+def get_clusters(z, shresholdx):
+    hc = fcluster(z, shresholdx, 'distance')
     clusters = {}
     with open("eval/cluster_results.txt", "w") as f:
         for i in xrange(hc.min(), hc.max()+1):
@@ -255,11 +253,10 @@ def main():
     print max(y)
     getdmat = timeit.default_timer()
     print "Finish generating distance matrix", getdmat - hashgenat
-    Z = hacluster(y)
+    z = hacluster(y)
     hclustat = timeit.default_timer()
-    shresholdx, tempy = evaluate(Z)
-    #print "Round", i, j, tempy
-    get_clusters(Z, shresholdx)
+    shresholdx, tempy = evaluate(z)
+    get_clusters(z, shresholdx)
     print "Finish clustering analyais", len(malorder), hclustat - getdmat    
     
     

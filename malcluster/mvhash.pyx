@@ -18,6 +18,7 @@ cdef class MvHash:
     cdef np.ndarray bits
     cdef float alpha
 
+
     def __cinit__(self, int numPerBF = 1536, int neighborSize = 20, float alpha = 0.5):
         self.numPerBF = numPerBF
         self.neighborSize = neighborSize
@@ -26,8 +27,9 @@ cdef class MvHash:
         for x in xrange(256):
             self.bits[x] = self.nnz(x)
     
-    """ Generate mvhash fingerprint from input file by calling the executable """
+
     def generateHash(self, char * filename):
+        """ Generate mvhash fingerprint from input file by calling the executable """
         cdef np.ndarray mvarray, mvoutput
 #         inputname = os.path.join(os.getcwd(), "samples/" + filename)
 #         outputname = os.path.join(os.getcwd(), "hashs/" + filename)
@@ -54,10 +56,9 @@ cdef class MvHash:
             mvoutput[i] = tempbitarray
         return mvoutput
       
-    """ Compare two mvhash fingerprints through original algorithm by calling the executable """
+
     cpdef int compare1(self, char *a, char *b):
-#         fileA = os.path.join(os.getcwd(), "hashs/" + a) 
-#         fileB = os.path.join(os.getcwd(), "hashs/" + b)
+        """ Compare two mvhash fingerprints through original algorithm by calling the executable """
         commands = ["./mvhash", "-e", str(self.numPerBF), "-i", a, "-m", b]
         try: 
             p = subprocess.Popen(commands, stdout=subprocess.PIPE)
@@ -71,12 +72,13 @@ cdef class MvHash:
             print "mvhash fingerprint generation error.", a, b
             sys.exit(1)
        
-    """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """   
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)       
     cpdef float compareHash(self, np.ndarray a,
                                    np.ndarray b):
+        """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """
         cdef float ratio, hammingTotal = 0
         cdef int nblocksA = a.size, nblocksB = b.size
         cdef int i, j, k
@@ -124,13 +126,13 @@ cdef class MvHash:
             #return float("%.3f" % (hammingTotal/nblocksA * ratio + 1 - ratio)) # *self.alpha + (1-ratio)*(1-self.alpha)))  #
             return float("%.3f" % ((hammingTotal + (nblocksB-nblocksA))/nblocksB) )
             
-    """ Compare Two mvhash fingerprints through bit-wise jaccard similarity, normalized to 1 """
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
     cpdef float compareHashJ(self, np.ndarray a,
                                    np.ndarray b):
-
+        """ Compare Two mvhash fingerprints through bit-wise jaccard similarity, normalized to 1 """
         cdef float ratio, jaccardTotal = 0
         cdef int numArrayA = a.size, numArrayB = b.size
         cdef int j, i, k, index
@@ -175,8 +177,9 @@ cdef class MvHash:
 #             else:
             return float("%.3f" % (jaccardTotal/numArrayB)) #* ratio) # + 1 - ratio))
 
-    """ Count the number of 1-bits in val, val must be non-negative. """
+
     cdef int nnz(self, unsigned char val):
+        """ Count the number of 1-bits in val, val must be non-negative. """
         cdef int res = 0
         while val:
             res += 1

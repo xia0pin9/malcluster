@@ -53,12 +53,13 @@ cdef class SdHash:
             #print "sdhash fingerprint comparison error.", a, b
             #sys.exit(1)
             
-    """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """   
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)       
     cpdef float compareHash(self, np.ndarray a,
                                    np.ndarray b):
+        """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """
         cdef float ratio, hammingTotal = 0
         cdef int nblocksA = a.size, nblocksB = b.size
         cdef int i, j, k
@@ -103,4 +104,3 @@ cdef class SdHash:
 #                 return 1
 #             else:
             return float("%.3f" % (hammingTotal/nblocksA  * ratio + 1 - ratio)) # *self.alpha + (1-ratio)*(1-self.alpha)))  #
-            

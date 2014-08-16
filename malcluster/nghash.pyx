@@ -9,6 +9,7 @@ cimport numpy as np
 from bitarray import bitarray
 np.import_array()
 
+
 cdef class NgHash:
 
     # n-gram size, eg 16-gram
@@ -16,6 +17,7 @@ cdef class NgHash:
     cdef int windowSize
     # Prepare a bit number table for fast query
     cdef np.ndarray bits
+
 
     @cython.boundscheck(False)
     def __cinit__(self, int shredSize = 20, int windowSize = 1):
@@ -26,13 +28,15 @@ cdef class NgHash:
         for x in xrange(256):
             self.bits[x] = self.nnz(x)
 
+
     cdef np.ndarray[np.uint8_t, ndim=1] getBytes(self, char * filename):
 #         inputname = os.path.join(os.getcwd(), "samples/" + filename)
         cdef np.ndarray[np.uint8_t, ndim=1] filebytes
         with open(filename) as f:
             filebytes = np.fromfile(f, dtype="uint8")
         return filebytes
-        
+
+
     def generateRaw(self, char * filename):
         cdef np.ndarray filebytes = self.getBytes(filename)
         cdef int numNg = filebytes.size - self.n + 1
@@ -81,8 +85,7 @@ cdef class NgHash:
             numBlock = numNg / 1000 + 1
             
         hasha = np.zeros(numBlock*2048, dtype='uint8')
-        
-#         print "Test"
+
         for i in xrange(numNg):
             ngarraya[i] = filebytes[i:i+self.n]
             
@@ -198,28 +201,33 @@ cdef class NgHash:
             #return float("%.3f" % (hammingTotal/nblocksA * ratio + 1 - ratio)) # *self.alpha + (1-ratio)*(1-self.alpha)))  #
             return float("%.3f" % ((hammingTotal + (nblocksB-nblocksA))/nblocksB) )    
 
+
     @cython.boundscheck(False)
     cpdef float compareHashb(self, a, b):
         #print np.sum(self.bits[a|b]), np.sum(self.bits[a&b]), (np.sum(self.bits[a]) + np.sum(self.bits[b]) - np.sum(self.bits[a&b]))
         return 1 - np.sum(self.bits[a&b])*1.0/ np.sum(self.bits[a|b])
-    
+
+
     @cython.boundscheck(False)
     cpdef float compareHashH(self, a, b):
         return np.sum(self.bits[a^b])*1.0/np.sum(self.m*1024*8)
-        
+
+
     cdef int nnz(self, unsigned char val):
         cdef int res = 0
         while val:
             res += 1
             val = val & (val -1)
         return res
-        
+
+
     cdef int djb2(self, np.ndarray[np.uint8_t, ndim=1, mode='c'] str):
         cdef int byte
         cdef int hash = 5381
         for byte in str:
             hash = (((hash << 5) + hash) + byte)  # bit array size: 32*1024*8
         return hash & (self.m*1024*8-1)
+
 
     cdef int djb2a(self, np.ndarray[np.uint8_t, ndim=1, mode='c'] str):
         cdef int b

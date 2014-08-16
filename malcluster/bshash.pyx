@@ -19,6 +19,7 @@ cdef class BsHash:
     cdef np.ndarray bits
     cdef float alpha
 
+
     def __cinit__(self, int fpSize = 8*1024, int shredSize = 20, int windowSize = 1):
         self.fpSize = fpSize
         self.shredSize = shredSize

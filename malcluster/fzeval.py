@@ -6,13 +6,11 @@ __version__ = "0.1.0"
 
 import os
 import shutil
+import cPickle
 import itertools
 import numpy as np
 import multiprocessing as mp
-import matplotlib
-matplotlib.use('AGG')
 import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure, show
 import mvhash
 import nghash
 import sdhash
@@ -89,10 +87,17 @@ def main():
                   mvhash.MvHash(512, 20, 0.7),
                   nghash.NgHash(7, 1),
                   sdhash.SdHash()]
+    hash_names = ["bshash", ""]
+    i = j = 0
 
-    for hash_name in hash_algos:
+    for hash_type in hash_algos:
         mal_families = {}
-        myhash = hash_name
+        myhash = hash_type
+        hash_name = hash_names[j]
+
+        if os.listdir
+
+
         print "Generating fingerprint lists for %s." % hash_name
         hash_gen()
         for mal in fingerprints:
@@ -101,16 +106,17 @@ def main():
                 mal_families[mal_family] = [mal]
             else:
                 mal_families[mal_family].append(mal)
-
+        same_family_dm = []
         for family in mal_families:
             malorder = mal_families[family]
             print "Calculating pairwise distance for family %s." % family
-            same_family_dm = get_dmlist(None)
-            # print "Hash used:", hash_name, "Family name:", family, len(same_family_dm)
+            same_family_dm.extend(get_dmlist(None))
 
-        figure(0)
+            # print "Hash used:", hash_name, "Family name:", family, len(same_family_dm)
+        plt.figure(0)
         dmcount_total = len(same_family_dm)
         same_family_dmcount = {x: same_family_dm.count(x)*1.0/dmcount_total for x in same_family_dm}
+        cPickle.dump(same_family_dmcount, open(hash_name + ".same", 'rb'))
         same_family_x = np.sort(np.array(same_family_dmcount.keys()))
         same_family_y = np.zeros(same_family_x.size)
         same_family_y[0] = same_family_dmcount[same_family_x[0]]
@@ -118,19 +124,20 @@ def main():
             same_family_y[i] = same_family_y[i-1] + same_family_dmcount[same_family_x[i]]
         plt.plot(same_family_x, same_family_y)
 
-        figure(1)
+        plt.figure(1)
         diff_family_dm = get_dmlist(mal_families)
         dmcount_total = len(diff_family_dm)
         diff_family_dmcount = {x: diff_family_dm.count(x)*1.0/dmcount_total for x in diff_family_dm}
+        cPickle.dump(diff_family_dmcount, open(hash_name + ".diff", 'rb'))
         diff_family_x = np.sort(np.array(diff_family_dmcount.keys()))
         diff_family_y = np.zeros(diff_family_x.size)
         diff_family_y[0] = diff_family_dmcount[diff_family_x[0]]
         for i in xrange(1, diff_family_x.size):
             diff_family_y[i] = diff_family_y[i-1] + diff_family_dmcount[diff_family_x[i]]
         plt.plot(diff_family_x, diff_family_y)
-        break
+        j += 1
 
-    show()
+    plt.show()
 
     print "Finish fuzzy hashing evaluation analyais"
 

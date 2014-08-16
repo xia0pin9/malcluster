@@ -147,17 +147,17 @@ cdef class NgHash:
         except:
             print "mvhash fingerprint generation error.", a, b
             sys.exit(1)
-      
+
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)       
-    cpdef float compareHasha(self, np.ndarray a,
-                                   np.ndarray b):
-        """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """ 
+    cpdef float compareHasha(self, np.ndarray a, np.ndarray b):
+        """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """
         cdef float ratio, hammingTotal = 0
         cdef int nblocksA = a.size, nblocksB = b.size
         cdef int i, j, k
-        cdef np.ndarray[np.float_t, ndim=2] resultHamming   
+        cdef np.ndarray[np.float_t, ndim=2] resultHamming
     
         if (nblocksA > nblocksB):
             ratio = nblocksB*1.0/nblocksA

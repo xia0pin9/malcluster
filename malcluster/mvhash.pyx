@@ -76,8 +76,7 @@ cdef class MvHash:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)       
-    cpdef float compareHash(self, np.ndarray a,
-                                   np.ndarray b):
+    cpdef float compareHash(self, np.ndarray a, np.ndarray b):
         """ Compare two mvhash fingerprints through hamming distance, normalized to 1 """
         cdef float ratio, hammingTotal = 0
         cdef int nblocksA = a.size, nblocksB = b.size
@@ -130,8 +129,7 @@ cdef class MvHash:
     @cython.boundscheck(False)
     @cython.wraparound(False)
     @cython.nonecheck(False)
-    cpdef float compareHashJ(self, np.ndarray a,
-                                   np.ndarray b):
+    cpdef float compareHashJ(self, np.ndarray a, np.ndarray b):
         """ Compare Two mvhash fingerprints through bit-wise jaccard similarity, normalized to 1 """
         cdef float ratio, jaccardTotal = 0
         cdef int numArrayA = a.size, numArrayB = b.size

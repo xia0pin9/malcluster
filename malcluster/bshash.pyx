@@ -27,8 +27,8 @@ cdef class BsHash:
         self.bits = np.empty(256, dtype='uint8')
         for x in xrange(256):
             self.bits[x] = self.nnz(x)
-    
-    
+
+
     def generateHash(self, char * filename):
         """ Generate mvhash fingerprint from input file by calling the executable """
         cdef np.ndarray mvarray, mvoutput
@@ -58,8 +58,8 @@ cdef class BsHash:
 #             mvoutput[i] = tempbitarray
         mvarray = mvarray[4:]
         return mvarray
-      
-    
+
+
     cpdef float compareHashRaw(self, char *a, char *b):
         """ Compare two bshash fingerprints through original algorithm by calling the executable """
 #         fileA = os.path.join(os.getcwd(), "hashs/" + a) 
@@ -73,8 +73,8 @@ cdef class BsHash:
         except:
             print "mvhash fingerprint generation error.", a, b
             sys.exit(1)
-       
-       
+
+
     @cython.boundscheck(False)
     cpdef float compareHash(self, a, b):
         #print np.sum(self.bits[a|b]), np.sum(self.bits[a&b]), (np.sum(self.bits[a]) + np.sum(self.bits[b]) - np.sum(self.bits[a&b]))

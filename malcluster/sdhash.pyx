@@ -38,6 +38,7 @@ cdef class SdHash:
             mvoutput[i] = tempbitarray
         return mvoutput
 
+
     cpdef float compareHashJ(self, char *a, char *b):
         commands = ["sdhash", "-c", a, b, "-t", "0"]
         try:

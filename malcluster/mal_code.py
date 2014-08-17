@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Exetract the code section sequences for samples in the given directory.
+"""
+
 import os
 import sys
 import pefile

@@ -83,12 +83,17 @@ def get_dmlist(mal_families):
 def main():
     global myhash
     global malorder
-    hash_algos = [bshash.BsHash(81920, 7, 1),
-                  mvhash.MvHash(512, 20, 0.7),
-                  nghash.NgHash(7, 1),
-                  sdhash.SdHash()]
-    hash_names = ["bshash", ""]
+    hash_algos = [bshash.BsHash(81920, 7, 1),   # BsHash works on original whole samples
+                  nghash.NgHash(7, 1),          # NgHash works on original whole samples
+                  mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code secquences
+                  sdhash.SdHash()]              # SdHash works on python-extracted code secquences
+    hash_names = ["bshash", "nghash", "mvhash", "sdhash"]
     i = j = 0
+
+    if len(os.listdir("samples_whole")) == 1146:
+        for file_name in os.listdir("samples"):
+            shutil.move("samples/" + file_name, "samples_code/" + file_name)
+            shutil.move("samples_whole/" + file_name, "samples/" + file_name)
 
     for hash_type in hash_algos:
         mal_families = {}
@@ -96,17 +101,16 @@ def main():
         hash_name = hash_names[j]
 
         if j == 0:
-            if len(os.listdir("samples_whole")) > 0:
-                for file_name in os.listdir("samples"):
-                    shutil.move("samples/" + file_name, "samples_code/" + file_name)
-                    shutil.move("samples_whole/" + file_name, "samples/" + file_name)
-        else:
-            if len(os.listdir("samples_code")) > 0:
+            j += 1
+            continue
+
+        if j == 2:
+            if len(os.listdir("samples_code")) == 1146:
                 for file_name in os.listdir("samples"):
                     shutil.move("samples/" + file_name, "samples_whole/" + file_name)
                     shutil.move("samples_code/" + file_name, "samples/" + file_name)
 
-        print "Generating fingerprint lists for %s." % hash_name
+        print "Generating fingerprint lists for %s (%d)." % (hash_name, len(os.listdir("samples")))
         hash_gen()
         for mal in fingerprints:
             mal_family = mal.split("-")[0]
@@ -117,13 +121,13 @@ def main():
         same_family_dm = []
         for family in mal_families:
             malorder = mal_families[family]
-            print "Calculating pairwise distance for family %s." % family
+            print "Calculating pairwise distance for family %s (%d)." % (family, len(mal_families[family]))
             same_family_dm.extend(get_dmlist(None))
             # print "Hash used:", hash_name, "Family name:", family, len(same_family_dm)
 
         dmcount_total = len(same_family_dm)
         same_family_dmcount = {x: same_family_dm.count(x)*1.0/dmcount_total for x in same_family_dm}
-        cPickle.dump(same_family_dmcount, open(hash_name + ".same", 'rb'))
+        cPickle.dump(same_family_dmcount, open(hash_name + ".same", 'r+b'))
         # plt.figure(0)
         # same_family_x = np.sort(np.array(same_family_dmcount.keys()))
         # same_family_y = np.zeros(same_family_x.size)
@@ -135,7 +139,7 @@ def main():
         diff_family_dm = get_dmlist(mal_families)
         dmcount_total = len(diff_family_dm)
         diff_family_dmcount = {x: diff_family_dm.count(x)*1.0/dmcount_total for x in diff_family_dm}
-        cPickle.dump(diff_family_dmcount, open(hash_name + ".diff", 'rb'))
+        cPickle.dump(diff_family_dmcount, open(hash_name + ".diff", 'r+b'))
         #plt.figure(1)
         # diff_family_x = np.sort(np.array(diff_family_dmcount.keys()))
         # diff_family_y = np.zeros(diff_family_x.size)

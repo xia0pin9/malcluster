@@ -133,7 +133,7 @@ cdef class NgHash:
 #             for byte in xrange(256):
 #                 tempbitarray.extend(np.binary_repr(mvarray[i*256+byte], 8)) 
 #             mvoutput[i] = tempbitarray
-        return outputname
+#         return outputname
 
 
     cpdef float compareHash(self, char *a, char *b):
@@ -167,18 +167,11 @@ cdef class NgHash:
                     resultHamming[i][j] = (b[i]^a[j]).count(True)/ 2048.0
             # Recursively find k smallest distance from a nblocksB by nblocksA array
             for k in xrange(nblocksB):
-#                 print nblocksA-k, np.shape(resultHamming)[1]
                 index = np.argmin(resultHamming)
                 i, j = divmod(index, nblocksA)
-#                 i, j = divmod(index, nblocksA-k)
                 hammingTotal += resultHamming[i][j]
-#                 resultHamming = np.delete(np.delete(resultHamming, i, 0), j, 1)
                 resultHamming[i, :] = 1
                 resultHamming[:, j] = 1
-#             if np.round(hammingTotal/nblocksB, 3) * self.alpha + ratio * (1) > 1:
-#                 return 1
-#             else:
-            #return float("%.3f" % (hammingTotal/nblocksB * ratio + 1 - ratio)) # *self.alpha + (1-ratio)*(1-self.alpha)))  #
             return float("%.3f" % ((hammingTotal + (nblocksA-nblocksB))/nblocksA))
         else:
             ratio = nblocksA*1.0/nblocksB
@@ -190,15 +183,9 @@ cdef class NgHash:
             for k in xrange(nblocksA):
                 index = np.argmin(resultHamming)
                 i, j = divmod(index, nblocksB)
-#                 i, j = divmod(index, np.shape(resultHamming)[1])
                 hammingTotal += resultHamming[i][j]
-#                 resultHamming = np.delete(np.delete(resultHamming, i, 0), j, 1)
                 resultHamming[i, :] = 1
                 resultHamming[:, j] = 1
-#             if np.round(hammingTotal/nblocksA, 3)*ratio + 1 - ratio > 1:
-#                 return 1
-#             else:
-            #return float("%.3f" % (hammingTotal/nblocksA * ratio + 1 - ratio)) # *self.alpha + (1-ratio)*(1-self.alpha)))  #
             return float("%.3f" % ((hammingTotal + (nblocksB-nblocksA))/nblocksB) )    
 
 

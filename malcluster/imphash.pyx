@@ -20,59 +20,95 @@ cdef class ImpHash:
             self.bits[x] = self.nnz(x)
 
 
-    def get_imp(self, pe):
+    cdef get_imp(self, pe):
         impstrs = []
-        exts = ['ocx', 'sys', 'dll']
-        if not hasattr(pe, "DIRECTORY_ENTRY_IMPORT"):
-            return ""
-        for entry in pe.DIRECTORY_ENTRY_IMPORT:
+#         exts = ['ocx', 'sys', 'dll', 'drv']
+
+        for entry in getattr(pe, "DIRECTORY_ENTRY_IMPORT", []):
             libname = entry.dll.lower()
-            parts = libname.rsplit('.', 1)
-            if len(parts) > 1 and parts[1] in exts:
-                libname = parts[0]
-            #print libname
+            if 'invalid' in libname:
+                continue
             for imp in entry.imports:
-                funcname = None
                 if not imp.name:
-                    funcname = ordlookup.ordLookup(entry.dll.lower(), imp.ordinal, make_name=True)
-                    if not funcname:
-                        raise Exception("Unable to look up ordinal %s:%04x" % (entry.dll, imp.ordinal))
-                else:
-                    funcname = imp.name
-
-                if not funcname:
                     continue
+                else:
+                    funcname = imp.name.lower()
 
-                impstrs.append('%s.%s' % (libname.lower(),funcname.lower()))
+                impstrs.append('%s.%s' % (libname, funcname))
+                
+#         exps = getattr(pe, "DIRECTORY_ENTRY_EXPORT", [])    
+#         if exps != []:
+#             for func in exps.symbols:  
+#                 if not func.name:
+#                     continue
+#                 else:
+#                     impstrs.append(func.name.lower())  
+#                  
+#         for bound_imp_desc in getattr(pe, "DIRECTORY_ENTRY_BOUND_IMPORT", []):
+#             libname = bound_imp_desc.name
+#             for bound_imp_ref in bound_imp_desc.entries:
+#                 if bound_imp_ref.name:
+#                     impstrs.append('%s.%s' % (libname.lower(), bound_imp_ref.name.lower()))
+#                     
+#         for module in getattr(pe, "DIRECTORY_ENTRY_DELAY_IMPORT", []):
+#             libname = module.dll.lower()
+#             for symbol in module.imports:
+#                 if symbol.name:
+#                     impstrs.append('%s.%s' % (libname, symbol.name.lower()))
+# 
+#         resources = getattr(pe, "DIRECTORY_ENTRY_RESOURCE", [])
+#         if resources != []:
+#             for entry in resources.entries:
+#                 if entry.name != None:
+#                     impstrs.append(str(entry.name).lower())
+#             directory = getattr(entry, 'directory', [])
+#             if directory != []:
+#                 for id in directory.entries:
+#                     impstrs.append(str(id.name).lower())
+
         return impstrs
 
 
-    cdef np.ndarray[np.uint8_t, ndim=1] generateHash(self, char * filename):
+    def generateHash(self, char * filename):
         cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] hash = np.zeros(self.m*1024, dtype='uint8')
-        cdef i, j, k, offset
-
-        pe = PE(filename)
-        impstrs_set = self.get_imp(pe)
-        for k in xrange(len(impstrs_set)):
-            offset = self.djb2(impstrs_set[k])
-            i = offset >> 3
-            j = 1 << (offset & 7)
-            hash[i] |= j
-            # i, j = divmod(self.djb2(ngarray[k]), 8)
-            # hash[i] = hash[i] | 2**j
+        cdef int i, j, k, offset
+        try:
+            pe = PE(filename)
+            impstrs_set = self.get_imp(pe)
+            for k in xrange(len(impstrs_set)):
+                impstr = np.array(list(bytearray(impstrs_set[k])))
+                offset = self.djb2(impstr)
+                i = offset >> 3
+                j = 1 << (offset & 7)
+                hash[i] |= j
+                # i, j = divmod(self.djb2(ngarray[k]), 8)
+                # hash[i] = hash[i] | 2**j
+        except:
+            raise
         return hash
 
 
-    def float compareHash(self,  np.ndarray a, np.ndarray b):
-        return 1 - np.sum(self.bits[a&b]) * 1.0 / np.sum(self.bits[a|b])
+    cpdef float compareHash(self,  np.ndarray a, np.ndarray b):
+        if np.sum(self.bits[a|b]) == 0:
+            return 1
+        else:
+            return 1 - np.sum(self.bits[a&b]) * 1.0 / np.sum(self.bits[a|b])
 
 
-    cdef int djb2(self, np.ndarray[np.uint8_t, ndim=1, mode='c'] str):
+    cdef int djb2(self, np.ndarray str):
         cdef int byte
         cdef int hash = 5381
         for byte in str:
             hash = (((hash << 5) + hash) + byte)  # bit array size: 1k
         return hash & (self.m*1024 - 1)
+
+
+    cdef int djb2a(self, np.ndarray str):
+        cdef int b
+        cdef int h = 5381
+        for b in str:
+            h = (((h << 5) ^ h) ^ b)  # bit array size: 32*1024*8
+        return h & (self.m*1024 - 1)
 
 
     cdef int nnz(self, unsigned char val):

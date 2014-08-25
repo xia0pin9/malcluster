@@ -23,6 +23,9 @@ import mvhash
 import nghash
 import sdhash
 import bshash
+import imphash
+import rlhash
+import profile
 
 
 p1 = None
@@ -195,62 +198,22 @@ def get_clusters(z, shresholdx):
             for mal in clusters[i]:
                 f.write(mal+"\n")
             f.write("\n")
-
-# def clusterStats(hc):
-#     global malorder
-#     tcluster = {}
-#     ccluster = {}
-#     precision = recall = 0
-#     for mal in malorder:
-#         if mal.split("-")[0] not in tcluster:
-#             tcluster[mal.split("-")[0]] = [mal.split("-")[1]]
-#         else:
-#             tcluster[mal.split("-")[0]].append(mal.split("-")[1])
-#     for i in xrange(hc.min(), hc.max()):
-#         ccluster[i] = {}
-#         for j in xrange(hc.size):
-#             if hc[j] == i:
-#                 mal = malorder[j]
-#                 if mal.split("-")[0] not in ccluster[i]:
-#                     ccluster[i][mal.split("-")[0]] = [mal.split("-")[1]]
-#                 else:
-#                     ccluster[i][mal.split("-")[0]].append(mal.split("-")[1])
-#     for i in ccluster:
-#         tempNum = 0
-#         tempName = None
-#         for mals in ccluster[i]:
-#             if len(ccluster[i][mals]) > tempNum:
-#                 tempNum = len(ccluster[i][mals])
-#                 tempName = mals
-#         if len(tcluster[tempName]) > tempNum:
-#             precision += tempNum
-#         else:
-#             print "Got error when calculating precision value for", tempName
-#     for malName in tcluster:
-#         tempNum = 0
-#         for j in ccluster:
-#             if malName in ccluster[j]:
-#                 if len(ccluster[j][malName]) > tempNum:
-#                     tempNum = len(ccluster[j][malName])
-#         if tempNum < len(tcluster[malName]):
-#             recall += tempNum
-#         else:
-#             print "Got error when calculating recall value for", malName
-#     return (precision*1.0/len(malorder), recall*1.0/len(malorder))
             
 
 def main():
     global myhash 
 #     myhash = mvhash.MvHash(512, 20, 0.7)
-    myhash = nghash.NgHash(7, 1)
+#     myhash = nghash.NgHash(7, 1)
 #     myhash = sdhash.SdHash()
 #     myhash = bshash.BsHash(81920, 7, 1)
+#     myhash = imphash.ImpHash(1)
+    myhash = rlhash.RlHash(16807, 256, 1)
     startedat = timeit.default_timer()
     hash_gen()
     hashgenat = timeit.default_timer()
     print "Finish generating fingerprints", hashgenat - startedat
     y = get_dmlist()
-    print max(y)
+    print "Max distance", np.amax(y)
     getdmat = timeit.default_timer()
     print "Finish generating distance matrix", getdmat - hashgenat
     z = hacluster(y)
@@ -260,14 +223,6 @@ def main():
     print "Finish clustering analyais", len(malorder), hclustat - getdmat    
     
     
-#     currentij = ''
-#     besty = 0
-#     for i in range(1000, 4000):         
-#         for j in range(5, 55):
-#             try:
-#                 myhash = mvhash.MvHash(i, j, 0.7)
-# #     myhash = nghash.NgHash(16, 8)
-# #     myhash = sdhash.SdHash()
 #     #startedat = timeit.default_timer()
 #                 hashGen()
 #     #hashgenat = timeit.default_timer()
@@ -288,26 +243,7 @@ def main():
 #                 continue	
 #     print "Done", currentij, besty
 
-#     print "Test1"
-#     a = os.path.join(os.getcwd(), "samples/bettersurf-001d106b8f74e8a92d8d19b39fb4afea")
-#     b = os.path.join(os.getcwd(), "samples/fosniw-fc2498ac9c1785d56441b4ac79ac2e95")
-#     mvhasha = myhash.generateHash(a)
-#     mvhashb = myhash.generateHash(b)
-#     print myhash.compareHash(mvhasha, mvhashb)
-#     nghash = NgHash(16, 32)
-#     print "Test2"
-#     rawa = nghash.generateRaw(a)
-#     rawb = nghash.generateRaw(b)
-#     print nghash.compareRaw(rawa, rawb)
-#     print "Test3"
-#     hasha = nghash.generateHash(a)
-#     hashb = nghash.generateHash(b)
-#     print nghash.compareHashH(hasha, hashb)
-#     print "Test4"
-#     hasha = nghash.generateHasha(a)
-#     hashb = nghash.generateHasha(b)
-#     print nghash.compareHashJ(hasha, hashb)
-
 
 if __name__ == "__main__":
+#     profile.run('main()')
     main()

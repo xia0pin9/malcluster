@@ -76,7 +76,7 @@ cdef class BsHash:
 
 
     @cython.boundscheck(False)
-    cpdef float compareHash(self, a, b):
+    cpdef float compareHash(self, np.ndarray a, np.ndarray b):
         #print np.sum(self.bits[a|b]), np.sum(self.bits[a&b]), (np.sum(self.bits[a]) + np.sum(self.bits[b]) - np.sum(self.bits[a&b]))
         return 1 - np.sum(self.bits[a&b])*1.0/ np.sum(self.bits[a|b])
 

@@ -13,7 +13,7 @@ cdef class ImpHash:
     cdef np.ndarray bits
     cdef int m
 
-    def __cinit__(self, m=1):
+    def __cinit__(self, int m=1):
         self.m = m
         self.bits = np.empty(256, dtype='uint8')
         for x in xrange(256):
@@ -89,10 +89,14 @@ cdef class ImpHash:
 
 
     cpdef float compareHash(self,  np.ndarray a, np.ndarray b):
-        if np.sum(self.bits[a|b]) == 0:
-            return 1
-        else:
-            return 1 - np.sum(self.bits[a&b]) * 1.0 / np.sum(self.bits[a|b])
+#         if np.sum(self.bits[a|b]) == 0:
+#             return 1
+#         else:
+#             return 1 - np.sum(self.bits[a&b]) * 1.0 / np.sum(self.bits[a|b])
+        cdef int bitwise_and = np.sum(self.bits[a&b])
+#         print "Test compare input size: ", np.sum(self.bits[a]), np.sum(self.bits[b])
+        #print np.sum(self.bits[a|b]), np.sum(self.bits[a&b]), (np.sum(self.bits[a]) + np.sum(self.bits[b]) - np.sum(self.bits[a&b]))
+        return float("%.6f" % (bitwise_and*1.0/ (np.sum(self.bits[a]) + np.sum(self.bits[b]) - bitwise_and)))
 
 
     cdef int djb2(self, np.ndarray str):
@@ -106,8 +110,8 @@ cdef class ImpHash:
     cdef int djb2a(self, np.ndarray str):
         cdef int b
         cdef int h = 5381
-        for b in str:
-            h = (((h << 5) ^ h) ^ b)  # bit array size: 32*1024*8
+        for b in xrange(str.size):
+            h = (((h << 5) ^ h) ^ str[b])  # bit array size: 32*1024*8
         return h & (self.m*1024 - 1)
 
 

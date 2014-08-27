@@ -203,11 +203,11 @@ def get_clusters(z, shresholdx):
 def main():
     global myhash 
 #     myhash = mvhash.MvHash(512, 20, 0.7)
-#     myhash = nghash.NgHash(7, 1)
+#     myhash = nghash.NgHash(7)
 #     myhash = sdhash.SdHash()
-#     myhash = bshash.BsHash(81920, 7, 1)
+    myhash = bshash.BsHash(81920, 7)
 #     myhash = imphash.ImpHash(1)
-    myhash = rlhash.RlHash(16807, 256, 1)
+#     myhash = rlhash.RlHash(16807, 256, 1)
     startedat = timeit.default_timer()
     hash_gen()
     hashgenat = timeit.default_timer()

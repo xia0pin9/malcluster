@@ -14,5 +14,6 @@ ext_modules=[Extension("nghash",
 setup(
     name = 'nghash',
     cmdclass = {'build_ext': build_ext},
+    include_dirs = [numpy.get_include()],
     ext_modules = ext_modules
     )

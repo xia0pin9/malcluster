@@ -5,7 +5,6 @@ cimport cython
 import numpy as np
 cimport numpy as np
 from bitarray import bitarray
-import pefile
 np.import_array()
 
 
@@ -30,11 +29,11 @@ cdef class NgHash:
             self.bits[x] = self.nnz(x)
 
 
-#     cdef np.ndarray[np.uint8_t, ndim=1] get_bytes(self, char * filename):
-#         cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] filebytes
-#         with open(filename) as f:
-#             filebytes = np.fromfile(f, dtype="uint8")
-#         return filebytes
+    cdef np.ndarray[np.uint8_t, ndim=1] get_bytes(self, char * filename):
+        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] filebytes
+        with open(filename) as f:
+            filebytes = np.fromfile(f, dtype="uint8")
+        return filebytes
 
 
     def generateRaw(self, char * filename):
@@ -55,7 +54,8 @@ cdef class NgHash:
     def generateHash(self, char * filename):  
         """ Generate feature hashing fingerprint through djb2()"""         
 #         cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] hash
-        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        #cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        cdef np.ndarray malbytes = self.get_bytes(filename)
         cdef np.ndarray ng_hash = np.array([])
         cdef np.ndarray ngoutput
         cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] temp_block
@@ -65,15 +65,6 @@ cdef class NgHash:
         cdef int block_index, block_count, fp_count
         
         try:
-            pe = pefile.PE(filename, fast_load=True)
-   
-            for sec in pe.sections:
-                secname = sec.Name.rstrip("\x00")
-                if ".text" == secname or "CODE" == secname:
-                    malbytes = np.append(malbytes, np.array(map(ord, sec.get_data()[:sec.Misc_VirtualSize])).astype('uint8'))
-                else:
-                    continue                 
-                
             num_ng = malbytes.size - self.ng_size + 1  
             ngarray = np.empty((num_ng, self.ng_size), dtype='uint8')
           

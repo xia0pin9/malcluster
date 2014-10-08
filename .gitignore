@@ -63,3 +63,4 @@ docs/_build/
 .settings
 *.html
 samples
+mvhash

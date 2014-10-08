@@ -5,7 +5,6 @@ cimport cython
 import numpy as np
 cimport numpy as np
 np.import_array()
-import pefile
 
 
 cdef class RlHash:
@@ -30,6 +29,13 @@ cdef class RlHash:
         self.bits = np.empty(256, dtype='uint8')
         for x in xrange(256):
             self.bits[x] = self.nnz(x)
+
+
+    cdef np.ndarray[np.uint8_t, ndim=1] get_bytes(self, char * filename):
+        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] filebytes
+        with open(filename) as f:
+            filebytes = np.fromfile(f, dtype="uint8")
+        return filebytes
 
     
     cdef np.ndarray get_cutoffs(self, np.ndarray malbytes):
@@ -92,27 +98,19 @@ cdef class RlHash:
 
     def generateHash(self, char * filename):
         cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] hash = np.zeros(self.fpsize*1024, dtype='uint8')
-        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        #cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        cdef np.ndarray malbytes = self.get_bytes(filename)
         cdef np.ndarray[np.int64_t, ndim=1, mode='c'] cutoff_results = np.array([], dtype='int64')
         cdef int i, j, offset, firstpos, currentpos
         try:
-            pe = pefile.PE(filename, fast_load=True)
-   
-            for sec in pe.sections:
-                secname = sec.Name.rstrip("\x00")
-                if ".text" == secname or "CODE" == secname:
-                    malbytes = np.append(malbytes, np.array(map(ord, sec.get_data()[:sec.Misc_VirtualSize])).astype('uint8'))
-                else:
-                    continue                 
-                
-                cutoff_results = np.append(cutoff_results, self.get_cutoffs(malbytes))
-                firstpos = 0
-                for currentpos in cutoff_results:
-                    offset = self.djb2(malbytes[firstpos:currentpos])
-                    i = offset >> 3
-                    j = 1 << (offset & 7)
-                    hash[i] |= j
-                    firstpos = currentpos
+            cutoff_results = np.append(cutoff_results, self.get_cutoffs(malbytes))
+            firstpos = 0
+            for currentpos in cutoff_results:
+                offset = self.djb2(malbytes[firstpos:currentpos])
+                i = offset >> 3
+                j = 1 << (offset & 7)
+                hash[i] |= j
+                firstpos = currentpos
         except:
             raise
         

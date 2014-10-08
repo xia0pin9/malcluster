@@ -11,3 +11,9 @@ Apply fuzzy hashing techniques in Android malware analysis
 
 3) Results Evaluation
    Currently, there are three methods for evalutating fuzzy hashing analysis results: precision and recall balance point for hierarchical clustering analysis; CDF graph for inter-family and intra-family distance computation; ROC curve and AUC value for different distance threshold.
+
+4) Dependencies:
+   fastcluster
+   scipy
+   cython
+   [bitarray]

@@ -18,12 +18,11 @@ from scipy.cluster.hierarchy import fcluster  # @UnresolvedImport
 from scipy.interpolate import PiecewisePolynomial  # @UnresolvedImport
 from scipy.optimize import fsolve  # @UnresolvedImport
 import matplotlib.pyplot as plt
-from plugins import mvhash
-from plugins import nghash
-from plugins import sdhash
-from plugins import bshash
-from plugins import imphash
-from plugins import rlhash
+from plugins.mvhash import MvHash
+from plugins.nghash import NgHash
+from plugins.sdhash import SdHash
+from plugins.bshash import BsHash
+from plugins.rlhash import RlHash
 
 
 p1 = None
@@ -33,14 +32,13 @@ fingerprints = {}
 cwd = os.getcwd()
 myhash = None
 algorithms = [
-              bshash.BsHash(81920, 10),     # BsHash works on original whole samples
-              nghash.NgHash(7),             # NgHash works on original whole samples
-              imphash.ImpHash(1),           # ImpHash works on original whole samples
-              rlhash.RlHash(16807, 256, 1),
-              mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code sequences
-              sdhash.SdHash()               # SdHash works on python-extracted code sequences
+              BsHash(81920, 10),     # BsHash works on original whole samples
+              NgHash(7),             # NgHash works on original whole samples
+              RlHash(16807, 256, 1),
+              MvHash(512, 20, 0.7),  # MvHash works on python-extracted code sequences
+              SdHash()               # SdHash works on python-extracted code sequences
              ]
-hash_names = ["bshash", "nghash", "imphash", "rlhash", "mvhash", "sdhash"]
+hash_names = ["bshash", "nghash", "rlhash", "mvhash", "sdhash"]
 
 
 def timing(f):

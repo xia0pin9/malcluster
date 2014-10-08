@@ -4,7 +4,6 @@
 import subprocess
 import sys
 import os
-import pefile 
 import cython
 from bitarray import bitarray
 import numpy as np
@@ -28,22 +27,21 @@ cdef class BsHash:
             self.bits[x] = self.nnz(x)
 
 
+    cdef np.ndarray[np.uint8_t, ndim=1] get_bytes(self, char * filename):
+        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] filebytes
+        with open(filename) as f:
+            filebytes = np.fromfile(f, dtype="uint8")
+        return filebytes
+
+
     def generateHash(self, char * filename):
         """ Generate mvhash fingerprint from input file by calling the executable """
-        cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        #cdef np.ndarray[np.uint8_t, ndim=1, mode='c'] malbytes = np.array([], dtype='uint8')
+        cdef np.ndarray malbytes = self.get_bytes(filename)
         cdef np.ndarray bshash = np.zeros(self.fp_size, dtype='uint8')
         cdef int i, j, k, offset, num_ng 
 
         try: 
-            pe = pefile.PE(filename, fast_load=True)
-
-            for sec in pe.sections:
-                secname = sec.Name.rstrip("\x00")
-                if ".text" == secname or "CODE" == secname:
-                    malbytes = np.append(malbytes, np.array(map(ord, sec.get_data()[:sec.Misc_VirtualSize])).astype('uint8'))
-                else:
-                    continue
-
             num_ng = malbytes.size - self.ng_size + 1
 
             for k in xrange(num_ng):

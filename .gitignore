@@ -62,9 +62,4 @@ docs/_build/
 .idea
 .settings
 *.html
-samples/
-samples_*
-hashs/
-eval/
-unsupported/
-setup.py
+samples

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Check details of clustering results
+"""
+
 def main():
     clusters = {}
     with open("eval/cluster_results.txt") as f:

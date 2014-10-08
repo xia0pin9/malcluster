@@ -1,5 +1,9 @@
 #!/usr/bin/evn python
 
+"""
+This scripts count the statistic info of all the samples(name convention: family-sha1)
+"""
+
 import os
 import sys
 

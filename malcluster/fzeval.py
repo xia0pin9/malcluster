@@ -8,7 +8,9 @@ import os
 import shutil
 import cPickle
 import itertools
+import cProfile
 import numpy as np
+import sklearn.metrics as sm
 import multiprocessing as mp
 import matplotlib.pyplot as plt
 import mvhash
@@ -23,6 +25,14 @@ malorder = []
 fingerprints = {}
 cwd = os.getcwd()  # @UndefinedVariable
 myhash = None  # @UndefinedVariable
+algorithms = [
+              bshash.BsHash(81920, 7),   # BsHash works on original whole samples
+              nghash.NgHash(7),          # NgHash works on original whole samples
+              imphash.ImpHash(1),           # ImpHash works on original whole samples
+              rlhash.RlHash(16807, 256, 1),
+              mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code secquences
+              sdhash.SdHash()               # SdHash works on python-extracted code secquences
+             ]
 hash_names = ["bshash", "nghash", "imphash", "rlhash", "mvhash", "sdhash"]
 
 
@@ -82,22 +92,14 @@ def get_dmlist(mal_families):
     return result
 
 
-def generate_data(hashindex):
+def generate_data(hashindex = -1):
     global malorder
     global myhash
-    algorithms = [
-                bshash.BsHash(81920, 7, 1),   # BsHash works on original whole samples
-                nghash.NgHash(7, 1),          # NgHash works on original whole samples
-                imphash.ImpHash(1),           # ImpHash works on original whole samples
-                rlhash.RlHash(16807, 256, 1),
-                mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code secquences
-                sdhash.SdHash()               # SdHash works on python-extracted code secquences
-                ]
     
     if hashindex == -1:
         hash_algos = algorithms
     else:
-        hash_algos = algorithms[hashindex]
+        hash_algos = [algorithms[hashindex]]
        
     # if len(os.listdir("samples_whole")) == 1146 and hash_algo:
     #     for file_name in os.listdir("samples"):
@@ -164,6 +166,41 @@ def display_original():
     plt.show()
 
 
+def display_roc():
+    thresholds = np.linspace(0, 1, 21)
+    for hash_name in hash_names:
+        tpr = []
+        fpr = []
+        with open(hash_name + ".same", 'r+b') as f:
+            same_family_dm = np.array(cPickle.load(f))
+        same_family_uniqw, same_family_inverse = np.unique(same_family_dm, return_inverse=True)
+        same_family_dmlist = dict(zip(same_family_uniqw, np.bincount(same_family_inverse)))
+        with open(hash_name + ".diff", 'r+b') as f:
+            diff_family_dm = np.array(cPickle.load(f))
+        diff_family_uniqw, diff_family_inverse = np.unique(diff_family_dm, return_inverse=True)
+        diff_family_dmlist = dict(zip(diff_family_uniqw, np.bincount(diff_family_inverse)))
+        for threshold in thresholds:
+            tp = fp = 0
+            for dm in same_family_dmlist:
+                if dm <= threshold:
+                    tp += same_family_dmlist[dm]
+            for dm in diff_family_dmlist:
+                if dm <= threshold:
+                    fp += diff_family_dmlist[dm]
+            tpr.append(tp*1.0/same_family_dm.size)
+            fpr.append(fp*1.0/diff_family_dm.size)
+        print sm.auc(fpr, tpr)
+        print "Fuzzy hashing algorithm: %s, AUC: %f" %(hash_name, sm.auc(fpr, tpr))
+        plt.figure(0)
+        plt.plot(fpr, tpr, label=hash_name)
+        plt.ylim(0.75, 1)
+        plt.legend(loc='best')
+        plt.title("ROC curve for different algorithms")
+        plt.xlabel("False posive rate")
+        plt.ylabel("True posive rate")
+    plt.show()
+        
+
 def display_cdf():
     for hash_name in hash_names:
         with open(hash_name + ".same", 'r+b') as f:
@@ -174,6 +211,7 @@ def display_cdf():
         same_family_dmcount = dict(zip(same_family_uniqw, np.bincount(same_family_inverse)*1.0/dmcount_total))
       
         plt.figure(0)
+        plt.subplot(1, 2, 1)
         same_family_x = np.sort(np.array(same_family_dmcount.keys()))
         same_family_y = np.zeros(same_family_x.size)
         same_family_y[0] = same_family_dmcount[same_family_x[0]]
@@ -192,7 +230,8 @@ def display_cdf():
         diff_family_uniqw, diff_family_inverse = np.unique(diff_family_dm, return_inverse=True)
         diff_family_dmcount = dict(zip(diff_family_uniqw, np.bincount(diff_family_inverse)*1.0/dmcount_total))
 
-        plt.figure(1)
+#         plt.figure(1)
+        plt.subplot(1, 2, 2)
         diff_family_x = np.sort(np.array(diff_family_dmcount.keys()))
         diff_family_y = np.zeros(diff_family_x.size)
         diff_family_y[0] = diff_family_dmcount[diff_family_x[0]]
@@ -203,17 +242,19 @@ def display_cdf():
         plt.title("Different Families Evaluation (precision)")
         plt.xlabel("Distance")
         plt.ylabel("Cumulative Probability")
-
+        plt.ylim(0, 1)
     plt.show()
     
 
 def main():
-    generate_data()
-    display_original()
-    display_cdf()
+#     generate_data()
+#     display_original()
+#     display_cdf()
+    display_roc()
 
     print "Finish fuzzy hashing evaluation analyais"
 
 
 if __name__ == "__main__":
+#     cProfile.run('main()')
     main()

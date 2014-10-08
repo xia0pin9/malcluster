@@ -5,6 +5,7 @@
 __version__ = "0.1.0"
 
 import os
+import sys
 import time
 import timeit
 import shutil
@@ -13,12 +14,10 @@ import numpy as np
 import fastcluster
 import quality
 import multiprocessing as mp
-from scipy.cluster.hierarchy import fcluster
-from scipy.interpolate import PiecewisePolynomial
-from scipy.optimize import fsolve 
+from scipy.cluster.hierarchy import fcluster  # @UnresolvedImport
+from scipy.interpolate import PiecewisePolynomial  # @UnresolvedImport
+from scipy.optimize import fsolve  # @UnresolvedImport
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist
-from matplotlib.pyplot import figure, show
 import mvhash
 import nghash
 import sdhash
@@ -34,6 +33,15 @@ malorder = []
 fingerprints = {}
 cwd = os.getcwd()
 myhash = None
+algorithms = [
+              bshash.BsHash(81920, 10),   # BsHash works on original whole samples
+              nghash.NgHash(7),          # NgHash works on original whole samples
+              imphash.ImpHash(1),           # ImpHash works on original whole samples
+              rlhash.RlHash(16807, 256, 1),
+              mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code secquences
+              sdhash.SdHash()               # SdHash works on python-extracted code secquences
+             ]
+hash_names = ["bshash", "nghash", "imphash", "rlhash", "mvhash", "sdhash"]
 
 
 def timing(f):
@@ -58,8 +66,6 @@ def hash_gen():
 
 
 def hash_comp(ab):
-#         a = fingerprints[ab[0]]
-#         b = fingerprints[ab[1]]
     return myhash.compareHash(ab[0], ab[1])
 
 
@@ -83,16 +89,6 @@ def get_dmlist():
     return np.array(result)
 
 
-# def getDmlist():
-#     dmlist = [map(fingerprints.get, item) for item in itertools.combinations(malorder, 2)]
-#     pool = mp.Pool(processes=mp.cpu_count())
-#     result = pool.map(hash_comp, dmlist)
-#     pool.close()
-#     pool.join()
-#     print "DM size: ", len(result)
-#     return np.array(result)
-
-
 def hacluster(y):
     """ Wrapper for the Hierarchical Clustering algorithm from fastcluster """
     z = fastcluster.linkage(y, method='single')
@@ -102,7 +98,7 @@ def hacluster(y):
 def evaluate(z):
     shutil.rmtree(os.path.join(os.getcwd(), "eval/"), ignore_errors=True)
     os.mkdir(os.path.join(os.getcwd(), "eval"))
-    threshold = np.linspace(0, 1, 21)
+    thresholds = np.linspace(0, 1, 21)
     mid = np.arange(0, 1, 0.01)
     precision_set = []
     recall_set = []
@@ -117,7 +113,7 @@ def evaluate(z):
         for family in refset:
             f.write(family + ": " + ' '.join([str(x) for x in refset[family]]) + "\n")
     
-    for i in threshold:
+    for i in thresholds:
         with open("eval/refset.txt") as f:
             reflines = f.readlines()
         hc = fcluster(z, i, 'distance')
@@ -127,13 +123,13 @@ def evaluate(z):
         precision_set.append(precision)
         recall_set.append(recall)
     global p1
-    p1 = PiecewisePolynomial(threshold, np.array(precision_set)[:, np.newaxis])
+    p1 = PiecewisePolynomial(thresholds, np.array(precision_set)[:, np.newaxis])
     global p2
-    p2 = PiecewisePolynomial(threshold, np.array(recall_set)[:, np.newaxis])
+    p2 = PiecewisePolynomial(thresholds, np.array(recall_set)[:, np.newaxis])
     for x in mid:
         root, infodict, ier, mesg = fsolve(pdiff, x, full_output=True)
         root = float("%.3f" % root[0])
-        if ier == 1 and threshold.min() < root < threshold.max():
+        if ier == 1 and thresholds.min() < root < thresholds.max():
             tempx = root
             break
     tempy = p2(tempx)
@@ -141,10 +137,10 @@ def evaluate(z):
         tempy = p1(tempx)
     print "Best x:", tempx, "Best y:", tempy
     try:
-        pleg1, = plt.plot(threshold, precision_set, '-bo', label="Precision")
-        pleg2, = plt.plot(threshold, recall_set, '-rx', label="Recall")
+        pleg1, = plt.plot(thresholds, precision_set, '-bo', label="Precision")
+        pleg2, = plt.plot(thresholds, recall_set, '-rx', label="Recall")
         plt.legend([pleg1, pleg2], ["Precision", "Recall"], loc="center right")
-        plt.xlabel('Distance Threshold (t)')
+        plt.xlabel('Distance threshold (t)')
         plt.ylabel("Precision and Recall")
         plt.show()
     except:
@@ -178,7 +174,7 @@ def get_clist(hc, s):
                         f.write(" " + str(j))
                 f.write("\n")
                 ncluster += 1
-    print "Threshold: ", s, "Nclusters: ", ncluster
+    print "threshold: ", s, "Nclusters: ", ncluster
     with open("eval/"+shres+".txt") as f:
         return f.readlines()
 
@@ -202,12 +198,12 @@ def get_clusters(z, shresholdx):
 
 def main():
     global myhash 
-#     myhash = mvhash.MvHash(512, 20, 0.7)
-#     myhash = nghash.NgHash(7)
-#     myhash = sdhash.SdHash()
-    myhash = bshash.BsHash(81920, 7)
-#     myhash = imphash.ImpHash(1)
-#     myhash = rlhash.RlHash(16807, 256, 1)
+    hash_name = sys.argv[1]
+    if hash_name in hash_names:
+        myhash = algorithms[hash_names.index(hash_name)]
+    else:
+        print "Unknown hash name provided."
+
     startedat = timeit.default_timer()
     hash_gen()
     hashgenat = timeit.default_timer()
@@ -221,27 +217,6 @@ def main():
     shresholdx, tempy = evaluate(z)
     get_clusters(z, shresholdx)
     print "Finish clustering analyais", len(malorder), hclustat - getdmat    
-    
-    
-#     #startedat = timeit.default_timer()
-#                 hashGen()
-#     #hashgenat = timeit.default_timer()
-#     #print "Finish generating fingerprints", hashgenat - startedat
-#                 y = getDmlist()
-#     #print max(y)
-#     #getdmat = timeit.default_timer()
-#     #print "Finish generating distance matrix", getdmat - hashgenat
-#                 Z = hacluster(y)
-#     #hclustat = timeit.default_timer()
-#                 shresholdx, tempy = evaluate(Z)
-#                 print "Round", i, j, tempy
-#     #getClusters(Z, shresholdx)
-#                 if tempy > besty:
-#                     besty = tempy
-#                     currentij = str(i) + "-" + str(j)
-#             except:
-#                 continue	
-#     print "Done", currentij, besty
 
 
 if __name__ == "__main__":

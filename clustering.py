@@ -12,7 +12,6 @@ import shutil
 import itertools
 import numpy as np
 import fastcluster
-import quality
 import multiprocessing as mp
 from scipy.cluster.hierarchy import fcluster  # @UnresolvedImport
 from scipy.interpolate import PiecewisePolynomial  # @UnresolvedImport
@@ -94,6 +93,53 @@ def hacluster(y):
     z = fastcluster.linkage(y, method='single')
     return z
 
+def calculate_precision(ref_lines, cdb_lines):
+    tp = 0
+    t_num = 0
+
+    for cline in cdb_lines:
+        clist = (cline.split(':')[1]).split()
+        clist_num = len(clist)
+        t_num += clist_num
+        maxcnt = 0
+        for rline in ref_lines:
+            rlist = (rline.split(':')[1]).split()
+            #rlist_num = len(rlist)
+            cnt = 0
+            for v in clist:
+                if v in rlist:
+                    cnt += 1
+            if cnt > maxcnt:
+                maxcnt = cnt
+                if maxcnt == clist_num:
+                    break
+        tp += maxcnt
+
+    return float(tp)/t_num
+
+def calculate_recall(ref_lines, cdb_lines):
+    tp = 0
+    t_num = 0
+
+    for rline in ref_lines:
+        rlist = (rline.split(':')[1]).split()
+        rlist_num = len(rlist)
+        t_num += rlist_num
+        maxcnt = 0
+        for cline in cdb_lines:
+            clist = (cline.split(':')[1]).split()
+            #clist_num = len(clist)
+            cnt = 0
+            for v in rlist:
+                if v in clist:
+                    cnt += 1
+            if cnt > maxcnt:
+                maxcnt = cnt
+                if maxcnt == rlist_num:
+                    break
+        tp += maxcnt
+
+    return float(tp)/t_num
 
 def evaluate(z):
     shutil.rmtree(os.path.join(os.getcwd(), "eval/"), ignore_errors=True)
@@ -118,8 +164,8 @@ def evaluate(z):
             reflines = f.readlines()
         hc = fcluster(z, i, 'distance')
         cdblines = get_clist(hc, i)
-        precision = quality.precision(reflines,  cdblines)
-        recall = quality.recall(reflines, cdblines)
+        precision = calculate_precision(reflines,  cdblines)
+        recall = calculate_recall(reflines, cdblines)
         precision_set.append(precision)
         recall_set.append(recall)
     global p1

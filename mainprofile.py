@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""malcluster: malware clustering analysis tool"""
+"""malcluster: profiling test interface"""
 
 __version__ = "0.1.0"
 

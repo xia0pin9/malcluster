@@ -10,6 +10,7 @@ import time
 import timeit
 import shutil
 import itertools
+import profile
 import numpy as np
 import fastcluster
 import multiprocessing as mp
@@ -17,13 +18,12 @@ from scipy.cluster.hierarchy import fcluster  # @UnresolvedImport
 from scipy.interpolate import PiecewisePolynomial  # @UnresolvedImport
 from scipy.optimize import fsolve  # @UnresolvedImport
 import matplotlib.pyplot as plt
-import mvhash
-import nghash
-import sdhash
-import bshash
-import imphash
-import rlhash
-import profile
+from plugins import mvhash
+from plugins import nghash
+from plugins import sdhash
+from plugins import bshash
+from plugins import imphash
+from plugins import rlhash
 
 
 p1 = None
@@ -33,12 +33,12 @@ fingerprints = {}
 cwd = os.getcwd()
 myhash = None
 algorithms = [
-              bshash.BsHash(81920, 10),   # BsHash works on original whole samples
-              nghash.NgHash(7),          # NgHash works on original whole samples
+              bshash.BsHash(81920, 10),     # BsHash works on original whole samples
+              nghash.NgHash(7),             # NgHash works on original whole samples
               imphash.ImpHash(1),           # ImpHash works on original whole samples
               rlhash.RlHash(16807, 256, 1),
-              mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code secquences
-              sdhash.SdHash()               # SdHash works on python-extracted code secquences
+              mvhash.MvHash(512, 20, 0.7),  # MvHash works on python-extracted code sequences
+              sdhash.SdHash()               # SdHash works on python-extracted code sequences
              ]
 hash_names = ["bshash", "nghash", "imphash", "rlhash", "mvhash", "sdhash"]
 
@@ -62,6 +62,7 @@ def hash_gen():
         malpath = os.path.join(cwd, "samples/" + malware)
         malorder.append(malware)
         fingerprints[malware] = myhash.generateHash(malpath)
+    shutil.rmtree(os.path.join(cwd, "hashs/"), ignore_errors=True)
 
 
 def hash_comp(ab):
